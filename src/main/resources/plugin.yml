@@ -1,0 +1,7 @@
+name: mcjctf
+version: '${version}'
+main: io.github.minus1over12.mcjctf.Mcjctf
+api-version: '1.20'
+prefix: CTF
+authors: [War Pigeon]
+description: Automated system for CTF
