@@ -1,3 +1,5 @@
+import xyz.jpenilla.runtask.task.AbstractRun
+
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.0"
@@ -20,6 +22,7 @@ repositories {
 
 dependencies {
     compileOnly "io.papermc.paper:paper-api:1.20.6-R0.1-SNAPSHOT"
+    implementation('org.jetbrains:annotations:24.1.0')
 }
 
 def targetJavaVersion = 21
@@ -50,16 +53,32 @@ processResources {
 }
 
 tasks {
-  runServer {
-    // Configure the Minecraft version for our task.
-    // This is the only required configuration besides applying the plugin.
-    // Your plugin's jar (or shadowJar if present) will be used automatically.
-    minecraftVersion("1.20.6")
-  }
+    runServer {
+        // Configure the Minecraft version for our task.
+        // This is the only required configuration besides applying the plugin.
+        // Your plugin's jar (or shadowJar if present) will be used automatically.
+        minecraftVersion("1.20.6")
+        downloadPlugins {
+            hangar("Geyser", "Geyser")
+            hangar("Floodgate", "Floodgate")
+        }
+    }
 }
 
 tasks.jar {
-  manifest {
-    attributes["paperweight-mappings-namespace"] = "mojang"
-  }
+    manifest {
+        attributes["paperweight-mappings-namespace"] = "mojang"
+    }
+}
+
+tasks.withType(AbstractRun).configureEach {
+    jvmArgs("-XX:+UseG1GC", "-XX:+ParallelRefProcEnabled", "-XX:MaxGCPauseMillis=200",
+            "-XX:+UnlockExperimentalVMOptions", "-XX:+DisableExplicitGC", "-XX:+AlwaysPreTouch",
+            "-XX:G1NewSizePercent=30", "-XX:G1MaxNewSizePercent=40", "-XX:G1HeapRegionSize=8M",
+            "-XX:G1ReservePercent=20", "-XX:G1HeapWastePercent=5", "-XX:G1MixedGCCountTarget=4",
+            "-XX:InitiatingHeapOccupancyPercent=15", "-XX:G1MixedGCLiveThresholdPercent=90",
+            "-XX:G1RSetUpdatingPauseTimePercent=5", "-XX:SurvivorRatio=32",
+            "-XX:+PerfDisableSharedMem", "-XX:MaxTenuringThreshold=1",
+            "-Dusing.aikars. flags=https://mcflags.emc.gs", "-Daikars.new.flags=true",
+            "-XX:+AllowRedefinitionToAddDeleteMethods")
 }
