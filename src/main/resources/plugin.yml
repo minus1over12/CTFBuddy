@@ -1,10 +1,17 @@
-name: mcjctf
+name: CTFBuddy
 version: '${version}'
-main: io.github.minus1over12.mcjctf.Mcjctf
+main: io.github.minus1over12.ctfbuddy.CTFBuddy
 api-version: '1.20'
-prefix: CTF
-authors: [War Pigeon]
+author: War Pigeon
 description: Automated system for CTF
 commands:
-   makeflag:
-      description: This sets the currently held item to be a flag.
+  makeflag:
+    description: Creates a new flag.
+    usage: |-
+      /<command> item
+      /<command> entity [<uuid>]
+    permission: CTFBuddy.makeflag
+permissions:
+  mcjctf.makeflag:
+    description: Allows the player to create a flag using /makeflag.
+    default: op

@@ -61,6 +61,7 @@ tasks {
         downloadPlugins {
             hangar("Geyser", "Geyser")
             hangar("Floodgate", "Floodgate")
+            modrinth("FastAsyncWorldEdit", "2.10.0")
         }
     }
 }

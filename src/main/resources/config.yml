@@ -1,0 +1,8 @@
+# Allow flags to travel to the End. Allowing this risks loss of flags to the Void.
+allowEnd: false
+
+# Behavior when a player quits with a flag in their inventory.
+# DROP: Drops the flag from the player's inventory.
+# KILL: Kills the player. This is not recommended if keepInventory is enabled, since the flag
+#       will not actually be dropped.
+quitMode: "DROP"
