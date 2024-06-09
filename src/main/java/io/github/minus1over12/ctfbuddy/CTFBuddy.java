@@ -61,80 +61,88 @@ public final class CTFBuddy extends JavaPlugin {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
-        if ("makeflag".equalsIgnoreCase(command.getName())) {
-            if (args.length < 1) {
-                return false;
-            }
-            switch (args[0]) {
-                case "item" -> {
-                    checkTrackingConfig(sender, DEFAULT_MISC_TRACKING_RANGE, "misc");
-                    checkTrackingConfig(sender, DEFAULT_MOB_TRACKING_RANGE, "players");
-                    if (args.length != 1) {
-                        return false;
-                    }
-                    if (sender instanceof HumanEntity player) {
-                        try {
-                            flagTracker.trackItem(player.getInventory().getItemInMainHand());
-                            sender.sendMessage(Component.text("Item in hand set as flag"));
-                        } catch (IllegalArgumentException e) {
-                            sender.sendMessage(
-                                    Component.text("Invalid item in hand", NamedTextColor.RED));
-                        }
-                    } else {
-                        sender.sendMessage(
-                                Component.text("You must be a human entity to use this command",
-                                        NamedTextColor.RED));
-                    }
-                    return true;
+        switch (command.getName().toLowerCase()) {
+            case "makeflag" -> {
+                if (args.length < 1) {
+                    return false;
                 }
-                case "entity" -> {
-                    switch (args.length) {
-                        case 1 -> {
-                            if (sender instanceof LivingEntity senderEntity) {
-                                Entity target = senderEntity.getTargetEntity(10);
-                                if (target != null) {
-                                    flagTracker.trackEntity(target);
-                                    sender.sendMessage(Component.text("Entity setup as flag"));
-                                    if (target instanceof Monster) {
-                                        checkTrackingConfig(sender, DEFAULT_MOB_TRACKING_RANGE,
-                                                "monsters");
-                                    } else if (target instanceof Animals) {
-                                        checkTrackingConfig(sender, DEFAULT_MOB_TRACKING_RANGE,
-                                                "animals");
+                switch (args[0]) {
+                    case "item" -> {
+                        checkTrackingConfig(sender, DEFAULT_MOB_TRACKING_RANGE, "players");
+                        // Checking misc is not needed since items get untracked on the client side
+                        // when far away.
+                        if (args.length != 1) {
+                            return false;
+                        }
+                        if (sender instanceof HumanEntity player) {
+                            try {
+                                flagTracker.trackItem(player.getInventory().getItemInMainHand());
+                                sender.sendMessage(Component.text("Item in hand set as flag"));
+                            } catch (IllegalArgumentException e) {
+                                sender.sendMessage(
+                                        Component.text("Invalid item in hand", NamedTextColor.RED));
+                            }
+                        } else {
+                            sender.sendMessage(
+                                    Component.text("You must be a human entity to use this command",
+                                            NamedTextColor.RED));
+                        }
+                        return true;
+                    }
+                    case "entity" -> {
+                        switch (args.length) {
+                            case 1 -> {
+                                if (sender instanceof LivingEntity senderEntity) {
+                                    Entity target = senderEntity.getTargetEntity(10);
+                                    if (target != null) {
+                                        flagTracker.trackEntity(target, this);
+                                        sender.sendMessage(Component.text("Entity setup as flag"));
+                                        if (target instanceof Monster) {
+                                            checkTrackingConfig(sender, DEFAULT_MOB_TRACKING_RANGE,
+                                                    "monsters");
+                                        } else if (target instanceof Animals) {
+                                            checkTrackingConfig(sender, DEFAULT_MOB_TRACKING_RANGE,
+                                                    "animals");
+                                        }
+                                    } else {
+                                        sender.sendMessage(Component.text("Not looking at a target",
+                                                NamedTextColor.RED));
                                     }
+                                    return true;
                                 } else {
-                                    sender.sendMessage(Component.text("Not looking at a target",
+                                    sender.sendMessage(Component.text(
+                                            "You must be a living entity to use this command",
                                             NamedTextColor.RED));
                                 }
                                 return true;
-                            } else {
-                                sender.sendMessage(Component.text(
-                                        "You must be a living entity to use this command",
-                                        NamedTextColor.RED));
                             }
-                            return true;
-                        }
-                        case 2 -> {
-                            try {
-                                flagTracker.trackEntity(UUID.fromString(args[1]));
-                            } catch (IllegalArgumentException e) {
-                                sender.sendMessage(
-                                        Component.text("Invalid UUID", NamedTextColor.RED));
+                            case 2 -> {
+                                try {
+                                    flagTracker.trackEntity(UUID.fromString(args[1]), this);
+                                } catch (IllegalArgumentException e) {
+                                    sender.sendMessage(
+                                            Component.text("Invalid UUID", NamedTextColor.RED));
+                                }
+                                return true;
                             }
-                            return true;
-                        }
-                        default -> {
-                            return false;
+                            default -> {
+                                return false;
+                            }
                         }
                     }
+                    default -> {
+                        return false;
+                    }
                 }
-                default -> {
-                    return false;
-                }
+                
             }
-            
+            case "ctfbuddy" -> {
+                sender.sendMessage(Component.text("CTFBuddy made by War Pigeon"));
+                return true;
+            }
+            default -> throw new UnsupportedOperationException(
+                    "Unexpected command: " + command.getName());
         }
-        return false;
     }
     
     /**

@@ -1,9 +1,9 @@
 name: CTFBuddy
 version: '${version}'
 main: io.github.minus1over12.ctfbuddy.CTFBuddy
-api-version: '1.20'
+api-version: '1.20.6'
 author: War Pigeon
-description: Automated system for CTF
+description: Assistant for running CTF style events
 commands:
   makeflag:
     description: Creates a new flag.
@@ -11,6 +11,10 @@ commands:
       /<command> item
       /<command> entity [<uuid>]
     permission: CTFBuddy.makeflag
+  ctfbuddy:
+    description: Shows info about the CTFBuddy plugin.
+    usage: "/<command>"
+    permission-message: "CTFBuddy made by War Pigeon"
 permissions:
   mcjctf.makeflag:
     description: Allows the player to create a flag using /makeflag.

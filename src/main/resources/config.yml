@@ -3,6 +3,11 @@ allowEnd: false
 
 # Behavior when a player quits with a flag in their inventory.
 # DROP: Drops the flag from the player's inventory.
-# KILL: Kills the player. This is not recommended if keepInventory is enabled, since the flag
-#       will not actually be dropped.
+# KILL: Kills the player.
 quitMode: "DROP"
+
+# By default, the plugin will launch fireworks every minute from the flag to help players find it.
+# It is recommended to keep this enabled if using item flags, as the client will not track items
+# from more than ~20 blocks away. The fireworks will clip through blocks, so they should be visible
+# from the surface if the flag is underground.
+useFireworks: true

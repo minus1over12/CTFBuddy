@@ -1,14 +1,24 @@
 package io.github.minus1over12.ctfbuddy;
 
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import io.papermc.paper.util.Tick;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
+import net.kyori.adventure.sound.SoundStop;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
 import org.bukkit.NamespacedKey;
 import org.bukkit.PortalType;
 import org.bukkit.SoundCategory;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -18,25 +28,32 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemRarity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
@@ -54,6 +71,10 @@ public class FlagTracker implements Listener {
      */
     private static final String FLAG_PICKED_UP_BY = "Flag picked up by ";
     /**
+     * Music played when a flag is picked up.
+     */
+    private static final String FLAG_MUSIC = "music.dragon";
+    /**
      * The key used to identify the flag item.
      */
     private final NamespacedKey isFlagKey;
@@ -70,6 +91,15 @@ public class FlagTracker implements Listener {
      * The action to use when a player quits with the flag.
      */
     private final QuitMode quitMode;
+    /**
+     * Reference to the plugin class. Needed for scheduling tasks.
+     */
+    private final Plugin plugin;
+    
+    /**
+     * Toggles use of firework "beacons" every minute.
+     */
+    private final boolean useFireworks;
     
     /**
      * Create a new FlagTracker.
@@ -81,7 +111,17 @@ public class FlagTracker implements Listener {
         logger = plugin.getLogger();
         FileConfiguration config = plugin.getConfig();
         allowEnd = config.getBoolean("allowEnd");
+        useFireworks = config.getBoolean("useFireworks");
         quitMode = QuitMode.valueOf(config.getString("quitMode", "DROP").trim().toUpperCase());
+        this.plugin = plugin;
+        if (useFireworks) {
+            Bukkit.getWorlds().forEach(
+                    world -> world.getEntities().parallelStream().filter(this::isFlag).forEach(
+                            entity -> entity.getScheduler()
+                                    .runAtFixedRate(plugin, new IndicateFlag(entity), null,
+                                            Tick.tick().fromDuration(Duration.ofMinutes(1)),
+                                            Tick.tick().fromDuration(Duration.ofMinutes(1)))));
+        }
     }
     
     /**
@@ -148,17 +188,18 @@ public class FlagTracker implements Listener {
                 entity.setGlowing(true);
                 pickedUpItem.remove();
                 logger.info(FLAG_PICKED_UP_BY + entity.getName() + " at " + entity.getLocation());
-                entity.getWorld()
-                        .playSound(entity, ENTITY_ALLAY_ITEM_GIVEN, SoundCategory.PLAYERS, 1, 0.9f);
-                if (entity instanceof Player player) {
-                    player.playSound(player, "item.armor.equip_generic", SoundCategory.PLAYERS, 1,
-                            1);
-                    player.playSound(player, "music.dragon", SoundCategory.PLAYERS, 1, 1);
-                }
+                entity.getWorld().playSound(
+                        Sound.sound(Key.key(ENTITY_ALLAY_ITEM_GIVEN), Sound.Source.PLAYER, 1, 0.9f),
+                        entity);
                 Component customName = pickedUpItem.customName();
                 if (entity instanceof Audience audience && customName != null) {
                     audience.sendActionBar(
                             Component.textOfChildren(Component.text("You picked up "), customName));
+                    audience.playSound(
+                            Sound.sound(Key.key("item.armor.equip_generic"), SoundCategory.PLAYERS,
+                                    1, 1));
+                    audience.stopSound(SoundStop.source(Sound.Source.MUSIC));
+                    audience.playSound(Sound.sound(Key.key(FLAG_MUSIC), Sound.Source.MUSIC, 1, 1));
                 }
             } else if (equipment != null) {
                 entity.playPickupItemAnimation(pickedUpItem);
@@ -171,8 +212,9 @@ public class FlagTracker implements Listener {
                 entity.setGlowing(true);
                 pickedUpItem.remove();
                 logger.info(FLAG_PICKED_UP_BY + entity.getName() + " at " + entity.getLocation());
-                entity.getWorld()
-                        .playSound(entity, ENTITY_ALLAY_ITEM_GIVEN, SoundCategory.HOSTILE, 1, 0.9f);
+                entity.getWorld().playSound(
+                        Sound.sound(Key.key(ENTITY_ALLAY_ITEM_GIVEN), Sound.Source.HOSTILE, 1,
+                                0.9f), entity);
             }
             event.setCancelled(true); // Item was manually added, this prevents a duplicate
         }
@@ -210,13 +252,18 @@ public class FlagTracker implements Listener {
         LivingEntity entity = event.getEntity();
         if (event.getDrops().stream().anyMatch(itemStack -> isFlag(itemStack.getItemMeta()))) {
             entity.setGlowing(false);
+            entity.stopSound(SoundStop.namedOnSource(Key.key(FLAG_MUSIC), Sound.Source.MUSIC));
         } else if (isFlag(entity)) {
             logger.info("Flag entity " + entity + " died at " + entity.getLocation());
-        } else if (entity.getEquipment() != null &&
-                isFlag(entity.getEquipment().getHelmet().getItemMeta())) {
-            entity.getWorld()
-                    .dropItemNaturally(entity.getLocation(), entity.getEquipment().getHelmet());
-            entity.setGlowing(false);
+        } else {
+            EntityEquipment equipment = entity.getEquipment();
+            if (equipment != null && isFlag(equipment.getHelmet().getItemMeta())) {
+                // Handles keepInventory true case
+                entity.getWorld().dropItemNaturally(entity.getLocation(), equipment.getHelmet());
+                entity.setGlowing(false);
+                equipment.setHelmet(null);
+                entity.stopSound(SoundStop.namedOnSource(Key.key(FLAG_MUSIC), Sound.Source.MUSIC));
+            }
         }
     }
     
@@ -239,8 +286,14 @@ public class FlagTracker implements Listener {
             item.setGlowing(true);
             item.getPersistentDataContainer().set(isFlagKey, PersistentDataType.BOOLEAN, true);
             logger.info("Flag item on ground at " + item.getLocation());
-            item.getWorld()
-                    .playSound(item, "entity.allay.item_thrown", SoundCategory.AMBIENT, 1, 0.9f);
+            item.getWorld().playSound(
+                    Sound.sound(Key.key("entity.allay.item_thrown"), Sound.Source.AMBIENT, 1, 0.9f),
+                    item);
+            if (useFireworks) {
+                item.getScheduler().runAtFixedRate(plugin, new IndicateFlag(item), null,
+                        Tick.tick().fromDuration(Duration.ofMinutes(1)),
+                        Tick.tick().fromDuration(Duration.ofMinutes(1)));
+            }
         }
     }
     
@@ -316,8 +369,9 @@ public class FlagTracker implements Listener {
      * Track an entity as a flag.
      *
      * @param entity The entity to track.
+     * @param plugin The plugin setting up tracking.
      */
-    protected void trackEntity(Entity entity) {
+    protected void trackEntity(Entity entity, Plugin plugin) {
         entity.getPersistentDataContainer().set(isFlagKey, PersistentDataType.BOOLEAN, true);
         entity.setGlowing(true);
         entity.setCustomNameVisible(true);
@@ -326,19 +380,67 @@ public class FlagTracker implements Listener {
         if (entity instanceof LivingEntity livingEntity) {
             livingEntity.setRemoveWhenFarAway(false);
         }
+        if (useFireworks) {
+            entity.getScheduler().runAtFixedRate(plugin, new IndicateFlag(entity), null,
+                    Tick.tick().fromDuration(Duration.ofMinutes(1)),
+                    Tick.tick().fromDuration(Duration.ofMinutes(1)));
+        }
     }
     
     /**
      * Track an entity as a flag, given its UUID.
      *
      * @param entityUUID The UUID of the entity to track.
+     * @param plugin     the plugin setting up tracking
      */
-    public void trackEntity(UUID entityUUID) {
+    protected void trackEntity(UUID entityUUID, Plugin plugin) {
         Entity entity = Bukkit.getEntity(entityUUID);
         if (entity == null) {
             throw new IllegalArgumentException("Entity not found");
         }
-        trackEntity(entity);
+        trackEntity(entity, plugin);
+    }
+    
+    /**
+     * Method used to cancel entity attacks if needed.
+     *
+     * @param event The event that triggered this method.
+     */
+    @EventHandler
+    public void onEntityTarget(EntityTargetLivingEntityEvent event) {
+        Entity entity = event.getEntity();
+        if (entity instanceof Creeper && isFlag(entity)) {
+            // Prevent flag Creepers from blowing themselves up
+            event.setCancelled(true);
+        }
+    }
+    
+    /**
+     * Prevents an entity from being destroyed by transformation.
+     *
+     * @param event The event that triggered this method.
+     */
+    @EventHandler
+    public void onEntityTransform(EntityTransformEvent event) {
+        if (isFlag(event.getEntity())) {
+            trackEntity(event.getTransformedEntity(), plugin);
+        }
+    }
+    
+    /**
+     * Sets scheduled tasks back up when a world loads.
+     *
+     * @param event The event that triggered this method.
+     */
+    @EventHandler
+    public void onWorldLoad(WorldLoadEvent event) {
+        if (useFireworks) {
+            event.getWorld().getEntities().parallelStream().filter(this::isFlag).forEach(
+                    entity -> entity.getScheduler()
+                            .runAtFixedRate(plugin, new IndicateFlag(entity), null,
+                                    Tick.tick().fromDuration(Duration.ofMinutes(1)),
+                                    Tick.tick().fromDuration(Duration.ofMinutes(1))));
+        }
     }
     
     /**
@@ -353,6 +455,54 @@ public class FlagTracker implements Listener {
          * Drop the flag when the player quits.
          */
         DROP
+    }
+    
+    /**
+     * Used to run a scheduled indicator to make flags easier to find.
+     */
+    private class IndicateFlag implements Consumer<ScheduledTask> {
+        /**
+         * The maximum amount of power allowed for a firework.
+         */
+        private static final int FIREWORK_POWER_LIMIT = 255;
+        /**
+         * The entity associated with this object.
+         */
+        private final Entity entity;
+        
+        /**
+         * Creates a new IndicateFlag instance.
+         *
+         * @param entity The entity being indicated.
+         */
+        private IndicateFlag(Entity entity) {
+            this.entity = entity;
+        }
+        
+        @Override
+        public void accept(ScheduledTask scheduledTask) {
+            if (!isFlag(entity)) {
+                scheduledTask.cancel();
+            } else {
+                Color[] rainbow = {Color.AQUA, Color.BLACK, Color.BLUE, Color.FUCHSIA, Color.GRAY,
+                        Color.GREEN, Color.LIME, Color.MAROON, Color.NAVY, Color.OLIVE,
+                        Color.ORANGE, Color.PURPLE, Color.RED, Color.SILVER, Color.TEAL,
+                        Color.WHITE, Color.YELLOW};
+                for (int power = 1; power <= FIREWORK_POWER_LIMIT; power++) {
+                    Firework firework = (Firework) entity.getWorld()
+                            .spawnEntity(entity.getLocation(), EntityType.FIREWORK_ROCKET);
+                    firework.setNoPhysics(true);
+                    FireworkMeta fireworkMetaCopy = firework.getFireworkMeta();
+                    fireworkMetaCopy.addEffect(
+                            FireworkEffect.builder().with(FireworkEffect.Type.BALL_LARGE)
+                                    .withTrail().withFlicker().withFade(rainbow).withColor(rainbow)
+                                    .build());
+                    fireworkMetaCopy.setPower(power);
+                    firework.setFireworkMeta(fireworkMetaCopy);
+                    firework.setVisualFire(true);
+                }
+            }
+        }
     }
     
 }
