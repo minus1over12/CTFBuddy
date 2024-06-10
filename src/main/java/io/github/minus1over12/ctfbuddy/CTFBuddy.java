@@ -12,7 +12,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -21,10 +23,6 @@ import java.util.UUID;
  * @author War Pigeon
  */
 public final class CTFBuddy extends JavaPlugin {
-    /**
-     * Spigot's default tracking range for misc entities.
-     */
-    private static final int DEFAULT_MISC_TRACKING_RANGE = 32;
     
     /**
      * Prefix of the warning to show when the default tracking range is being used for mobs.
@@ -41,14 +39,35 @@ public final class CTFBuddy extends JavaPlugin {
      */
     private static final int DEFAULT_MOB_TRACKING_RANGE = 48;
     /**
+     * String used to indicate the make flag command.
+     */
+    private static final String MAKEFLAG = "makeflag";
+    /**
+     * String used to indicate the plugin info command.
+     */
+    private static final String CTFBUDDY = "ctfbuddy";
+    /**
+     * String used to indicate making an entity flag.
+     */
+    private static final String ENTITY = "entity";
+    /**
+     * String used to indicate making an item flag.
+     */
+    private static final String ITEM = "item";
+    /**
      * Object that listens for changes to the flag state.
      */
     private FlagTracker flagTracker;
     
     @Override
+    public void onLoad() {
+        // Plugin loading logic
+        saveDefaultConfig();
+    }
+    
+    @Override
     public void onEnable() {
         // Plugin startup logic
-        saveDefaultConfig();
         flagTracker = new FlagTracker(this);
         getServer().getPluginManager().registerEvents(flagTracker, this);
     }
@@ -62,13 +81,13 @@ public final class CTFBuddy extends JavaPlugin {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
         switch (command.getName().toLowerCase()) {
-            case "makeflag" -> {
+            case MAKEFLAG -> {
                 if (args.length < 1) {
                     return false;
                 }
                 switch (args[0]) {
-                    case "item" -> {
-                        checkTrackingConfig(sender, DEFAULT_MOB_TRACKING_RANGE, "players");
+                    case ITEM -> {
+                        checkTrackingConfig(sender, "players");
                         // Checking misc is not needed since items get untracked on the client side
                         // when far away.
                         if (args.length != 1) {
@@ -89,20 +108,18 @@ public final class CTFBuddy extends JavaPlugin {
                         }
                         return true;
                     }
-                    case "entity" -> {
+                    case ENTITY -> {
                         switch (args.length) {
                             case 1 -> {
                                 if (sender instanceof LivingEntity senderEntity) {
                                     Entity target = senderEntity.getTargetEntity(10);
                                     if (target != null) {
-                                        flagTracker.trackEntity(target, this);
+                                        flagTracker.trackEntity(target);
                                         sender.sendMessage(Component.text("Entity setup as flag"));
                                         if (target instanceof Monster) {
-                                            checkTrackingConfig(sender, DEFAULT_MOB_TRACKING_RANGE,
-                                                    "monsters");
+                                            checkTrackingConfig(sender, "monsters");
                                         } else if (target instanceof Animals) {
-                                            checkTrackingConfig(sender, DEFAULT_MOB_TRACKING_RANGE,
-                                                    "animals");
+                                            checkTrackingConfig(sender, "animals");
                                         }
                                     } else {
                                         sender.sendMessage(Component.text("Not looking at a target",
@@ -118,7 +135,7 @@ public final class CTFBuddy extends JavaPlugin {
                             }
                             case 2 -> {
                                 try {
-                                    flagTracker.trackEntity(UUID.fromString(args[1]), this);
+                                    flagTracker.trackEntity(UUID.fromString(args[1]));
                                 } catch (IllegalArgumentException e) {
                                     sender.sendMessage(
                                             Component.text("Invalid UUID", NamedTextColor.RED));
@@ -136,8 +153,8 @@ public final class CTFBuddy extends JavaPlugin {
                 }
                 
             }
-            case "ctfbuddy" -> {
-                sender.sendMessage(Component.text("CTFBuddy made by War Pigeon"));
+            case CTFBUDDY -> {
+                sender.sendMessage(Component.text(this + " made by War Pigeon"));
                 return true;
             }
             default -> throw new UnsupportedOperationException(
@@ -148,15 +165,13 @@ public final class CTFBuddy extends JavaPlugin {
     /**
      * Checks the tracking config for default settings.
      *
-     * @param sender               the sender running a command.
-     * @param defaultTrackingRange the default value for the path being checked.
-     * @param entityTypeName       The entity type to check.
+     * @param sender         the sender running a command.
+     * @param entityTypeName The entity type to check.
      */
-    private void checkTrackingConfig(@NotNull Audience sender, int defaultTrackingRange,
-                                     String entityTypeName) {
+    private void checkTrackingConfig(@NotNull Audience sender, String entityTypeName) {
         if (getServer().spigot().getSpigotConfig()
                 .getInt("world-settings.default.entity-tracking-range." + entityTypeName) <=
-                defaultTrackingRange) {
+                CTFBuddy.DEFAULT_MOB_TRACKING_RANGE) {
             String warningMessage =
                     TRACKING_RANGE_WARNING_PREFIX + entityTypeName + TRACKING_RANGE_WARNING_SUFFIX;
             getLogger().warning(warningMessage);
@@ -164,4 +179,22 @@ public final class CTFBuddy extends JavaPlugin {
         }
     }
     
+    @Override
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender,
+                                                @NotNull Command command, @NotNull String alias,
+                                                @NotNull String[] args) {
+        switch (command.getName().toLowerCase()) {
+            case MAKEFLAG -> {
+                if (args.length == 1) {
+                    return List.of(ITEM, ENTITY);
+                } else {
+                    return List.of();
+                }
+            }
+            case CTFBUDDY -> {
+                return List.of();
+            }
+        }
+        return super.onTabComplete(sender, command, alias, args);
+    }
 }
