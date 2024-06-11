@@ -45,13 +45,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
@@ -103,7 +102,7 @@ public class FlagTracker implements Listener {
     /**
      * A set of entities that are known to be flags.
      */
-    private final Set<Entity> knownFlagEntities = Collections.synchronizedSet(new HashSet<>());
+    private final Set<Entity> knownFlagEntities = new CopyOnWriteArraySet<>();
     
     /**
      * Create a new FlagTracker.
@@ -479,7 +478,9 @@ public class FlagTracker implements Listener {
                         .fromDuration(Duration.ofSeconds(ThreadLocalRandom.current().nextInt(60,
                                 120))),
                 Tick.tick().fromDuration(Duration.ofMinutes(1)));
+        
         knownFlagEntities.add(entity);
+        
     }
     
     /**
