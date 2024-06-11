@@ -10,9 +10,10 @@ on the [Paper](https://papermc.io/software/paper) server.
 CTF Buddy doesn't have a prescribed flag item you have to use. CTF Buddy keeps track of items by
 adding a piece of metadata to the item, then listens for events involving that item. This means
 anything that you can hold in your hand can be a flag.
-
+![A custom flag item on the ground.](images/Flag-on-Ice.png)
 Want an entity instead? CTF Buddy can do that too! The plugin uses the same metadata system to
 allow keeping track of marked entities, so you can use your favorite Villager or Creeper as a flag.
+![A Villager marked as a flag](images/Jeff.png)
 
 ### Flag Visibility
 
@@ -20,6 +21,7 @@ Flags, and any entity carrying a flag, are given a glowing effect to make them e
 Additionally, entities holding a flag item will have their helmet slot replaced with the flag to
 make them easy to spot (if a player had a helmet before, it will be safely placed in their
 inventory).
+![A player carrying a flag](images/Player-with-Flag-on-Ice.png)
 
 By default, the plugin will shoot off firework particles every minute to help players find the
 flags. This can be disabled if needed.
@@ -30,6 +32,7 @@ CTF Buddy takes measures when an item is marked as a flag to make sure it is not
 to be destroyed. Flag entities can only be harmed by creative mode players and will not despawn.
 The plugin also prevents bringing flags to the end by default, where they could easily be lost to
 the void.
+![A flag sitting in a lava ocean, unharmed](images/Flag-in-Lava.png)
 
 ### Logout Protection
 
@@ -41,9 +44,9 @@ vehicle if the player tries to log out with them.
 
 ### Logging
 
-Need to figure out what happened to a flag? CTF Buddy logs flag events to the server console.
-You can use this to track down who won at the end of an event, or use to give players hints if
-needed.
+Need to figure out what happened to a flag? CTF Buddy logs to the server console whenever a player
+picks up or drops a flag item. You can use this to track down who won at the end of an event,
+or use to give players hints if needed.
 
 ## Usage
 
@@ -80,6 +83,7 @@ please let me know how it goes!). Upstreams of Paper (Bukkit & Spigot) will *not
 plugin utilizes the expanded API provided by Paper.
 
 Geyser is a bit problematic, due to a lack of important features in Bedrock Edition.
-[Bedrock does not support glowing](https://wiki.geysermc.org/geyser/current-limitations/#:~:text=links%20in%20chat-,Glowing%20effect,-Crafting%20in%20the)
-, which may make locating the flag harder for those players. Additionally,
-[Bedrock also does not support blocks on entity heads](https://wiki.geysermc.org/geyser/current-limitations/#:~:text=Blocks%20(excluding%20jack%2Do%2Dlantern)%20on%20entity%20heads%20(E.G.%20armor%20stands%2C%20players)), meaning the flag may not be visible on entities carrying them.
+[Bedrock does not support glowing](https://wiki.geysermc.org/geyser/current-limitations/#:~:text=links%20in%20chat-,Glowing%20effect,-Crafting%20in%20the),
+which may make locating the flag harder for those players. Additionally,
+[Bedrock also does not support blocks on entity heads](https://wiki.geysermc.org/geyser/current-limitations/#:~:text=Blocks%20(excluding%20jack%2Do%2Dlantern)%20on%20entity%20heads%20(E.G.%20armor%20stands%2C%20players)),
+meaning the flag may not be visible on entities carrying them.

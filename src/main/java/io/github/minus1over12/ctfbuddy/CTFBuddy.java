@@ -3,6 +3,7 @@ package io.github.minus1over12.ctfbuddy;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Animals;
@@ -70,6 +71,7 @@ public final class CTFBuddy extends JavaPlugin {
         // Plugin startup logic
         flagTracker = new FlagTracker(this);
         getServer().getPluginManager().registerEvents(flagTracker, this);
+        metrics();
     }
     
     @Override
@@ -196,5 +198,15 @@ public final class CTFBuddy extends JavaPlugin {
             }
         }
         return super.onTabComplete(sender, command, alias, args);
+    }
+    
+    /**
+     * Sends plugin metrics to bStats.
+     */
+    private void metrics() {
+        // All you have to do is adding the following two lines in your onEnable method.
+        // You can find the plugin ids of your plugins on the page https://bstats.org/what-is-my-plugin-id
+        int pluginId = 22225; // <-- Replace with the id of your plugin!
+        Metrics metrics = new Metrics(this, pluginId);
     }
 }

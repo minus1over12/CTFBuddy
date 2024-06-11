@@ -45,10 +45,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
@@ -101,7 +103,7 @@ public class FlagTracker implements Listener {
     /**
      * A set of entities that are known to be flags.
      */
-    private final HashSet<Entity> knownFlagEntities = new HashSet<>();
+    private final Set<Entity> knownFlagEntities = Collections.synchronizedSet(new HashSet<>());
     
     /**
      * Create a new FlagTracker.
@@ -316,8 +318,11 @@ public class FlagTracker implements Listener {
      */
     @EventHandler
     public void onPlayerPortal(PlayerPortalEvent event) {
-        if (Arrays.stream(event.getPlayer().getInventory().getContents()).filter(Objects::nonNull)
-                .anyMatch(itemStack -> isFlag(itemStack.getItemMeta()))) {
+        if (!allowEnd &&
+                event.getTo().getWorld().getEnvironment().equals(World.Environment.THE_END) &&
+                Arrays.stream(event.getPlayer().getInventory().getContents())
+                        .filter(Objects::nonNull)
+                        .anyMatch(itemStack -> isFlag(itemStack.getItemMeta()))) {
             event.setCancelled(true);
         }
     }
