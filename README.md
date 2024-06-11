@@ -87,3 +87,10 @@ Geyser is a bit problematic, due to a lack of important features in Bedrock Edit
 which may make locating the flag harder for those players. Additionally,
 [Bedrock also does not support blocks on entity heads](https://wiki.geysermc.org/geyser/current-limitations/#:~:text=Blocks%20(excluding%20jack%2Do%2Dlantern)%20on%20entity%20heads%20(E.G.%20armor%20stands%2C%20players)),
 meaning the flag may not be visible on entities carrying them.
+
+## bStats
+
+This plugin uses [bStats](https://bstats.org/), the common service used by most plugins and server
+software, to keep track of basic stats. You can opt out of bStats for all plugins and your server
+software by editing the `plugins/bStats/config.yml` file that is generated on the server's first
+launch.
