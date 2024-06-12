@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'io.github.minus1over12'
-version = '1.0-SNAPSHOT'
+version = '1.0.0'
 
 repositories {
     mavenCentral()
@@ -80,8 +80,12 @@ tasks {
 
 tasks.jar {
     manifest {
+        attributes["Implementation-Title"] = "CTFBuddy"
+        attributes["Implementation-Version"] = version
+        attributes["Implementation-Vendor"] = "War Pigeon"
         attributes["paperweight-mappings-namespace"] = "mojang"
     }
+    reproducibleFileOrder = true
 }
 
 tasks.withType(AbstractRun).configureEach {
