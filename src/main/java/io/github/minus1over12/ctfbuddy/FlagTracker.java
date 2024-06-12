@@ -44,10 +44,8 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -246,12 +244,16 @@ public class FlagTracker implements Listener {
             logger.info("Flag entity " + entity + " died at " + entity.getLocation());
         } else {
             EntityEquipment equipment = entity.getEquipment();
-            if (equipment != null && isFlag(equipment.getHelmet().getItemMeta())) {
-                // Handles keepInventory true case
-                entity.getWorld().dropItemNaturally(entity.getLocation(), equipment.getHelmet());
-                entity.setGlowing(false);
-                equipment.setHelmet(null);
-                entity.stopSound(SoundStop.namedOnSource(Key.key(FLAG_MUSIC), Sound.Source.MUSIC));
+            if (equipment != null) {
+                ItemStack helmet = equipment.getHelmet();
+                if (isFlag(helmet.getItemMeta())) {
+                    // Handles keepInventory true case
+                    entity.getWorld().dropItemNaturally(entity.getLocation(), helmet);
+                    entity.setGlowing(false);
+                    equipment.setHelmet(null);
+                    entity.stopSound(
+                            SoundStop.namedOnSource(Key.key(FLAG_MUSIC), Sound.Source.MUSIC));
+                }
             }
         }
     }
@@ -291,20 +293,17 @@ public class FlagTracker implements Listener {
      */
     @EventHandler
     public void onEntityPortal(EntityPortalEvent event) {
-        // Prevent the flag from being teleported to the end, if not allowed
-        Entity entity = event.getEntity();
-        if (!allowEnd && event.getPortalType().equals(PortalType.ENDER) &&
-                ((entity instanceof Item item && isFlag(item.getItemStack().getItemMeta())) ||
-                        entity instanceof InventoryHolder holder &&
-                                Arrays.stream(holder.getInventory().getContents())
-                                        .filter(Objects::nonNull)
-                                        .anyMatch(itemStack -> isFlag(itemStack.getItemMeta())) ||
-                        isFlag(entity))) {
-            event.setCancelled(true);
-        } else if (entity instanceof LivingEntity livingEntity) {
-            EntityEquipment equipment = livingEntity.getEquipment();
-            if (equipment != null && isFlag(equipment.getHelmet().getItemMeta())) {
+        if (!allowEnd && event.getPortalType().equals(PortalType.ENDER)) {
+            // Prevent the flag from being teleported to the end, if not allowed
+            Entity entity = event.getEntity();
+            if ((entity instanceof Item item && isFlag(item.getItemStack().getItemMeta()) ||
+                    isFlag(entity))) {
                 event.setCancelled(true);
+            } else if (entity instanceof LivingEntity livingEntity) {
+                EntityEquipment equipment = livingEntity.getEquipment();
+                if (equipment != null && isFlag(equipment.getHelmet().getItemMeta())) {
+                    event.setCancelled(true);
+                }
             }
         }
     }
@@ -319,9 +318,7 @@ public class FlagTracker implements Listener {
     public void onPlayerPortal(PlayerPortalEvent event) {
         if (!allowEnd &&
                 event.getTo().getWorld().getEnvironment().equals(World.Environment.THE_END) &&
-                Arrays.stream(event.getPlayer().getInventory().getContents())
-                        .filter(Objects::nonNull)
-                        .anyMatch(itemStack -> isFlag(itemStack.getItemMeta()))) {
+                isFlag(event.getPlayer().getEquipment().getHelmet().getItemMeta())) {
             event.setCancelled(true);
         }
     }
