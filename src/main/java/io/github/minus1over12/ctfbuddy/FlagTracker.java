@@ -445,8 +445,8 @@ public class FlagTracker implements Listener {
      */
     private void processPotentialFlagEntities(List<Entity> entities) {
         assert !particleBeacon;
-        entities.parallelStream().filter(this::isFlag)
-                .filter(entity -> !knownFlagEntities.contains(entity))
+        entities.parallelStream()
+                .filter(entity -> isFlag(entity) && !knownFlagEntities.contains(entity))
                 .forEach(this::addIndicatorSchedule);
         
     }
