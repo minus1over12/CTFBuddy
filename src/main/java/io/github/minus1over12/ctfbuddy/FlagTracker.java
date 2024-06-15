@@ -127,10 +127,7 @@ public class FlagTracker implements Listener {
      * @return True if the item is the flag item, false otherwise
      */
     private boolean isFlag(PersistentDataHolder item) {
-        if (item == null) {
-            return false;
-        }
-        return item.getPersistentDataContainer()
+        return item != null && item.getPersistentDataContainer()
                 .getOrDefault(isFlagKey, PersistentDataType.BOOLEAN, false);
     }
     
@@ -246,7 +243,7 @@ public class FlagTracker implements Listener {
             EntityEquipment equipment = entity.getEquipment();
             if (equipment != null) {
                 ItemStack helmet = equipment.getHelmet();
-                if (isFlag(helmet.getItemMeta())) {
+                if (helmet != null && isFlag(helmet.getItemMeta())) {
                     // Handles keepInventory true case
                     entity.getWorld().dropItemNaturally(entity.getLocation(), helmet);
                     entity.setGlowing(false);
@@ -296,8 +293,8 @@ public class FlagTracker implements Listener {
         if (!allowEnd && event.getPortalType().equals(PortalType.ENDER)) {
             // Prevent the flag from being teleported to the end, if not allowed
             Entity entity = event.getEntity();
-            if ((entity instanceof Item item && isFlag(item.getItemStack().getItemMeta()) ||
-                    isFlag(entity))) {
+            if (entity instanceof Item item && isFlag(item.getItemStack().getItemMeta()) ||
+                    isFlag(entity)) {
                 event.setCancelled(true);
             } else if (entity instanceof LivingEntity livingEntity) {
                 EntityEquipment equipment = livingEntity.getEquipment();
