@@ -77,9 +77,8 @@ creative players like normal. The nearest void can also be used, if you want a m
 
 ## Compatibility
 
-CTF Buddy was built for Minecraft: Java Edition version 1.20.6, running Paper or one of its
-forks. Other versions of Minecraft may work, but are untested. (If a newer version has come out,
-please let me know how it goes!). Upstreams of Paper (Bukkit & Spigot) will *not* work, as this
+CTFBuddy was built for Minecraft: Java Edition, running Paper or one of its
+forks. Upstreams of Paper (Bukkit & Spigot) will *not* work, as this
 plugin utilizes the expanded API provided by Paper.
 
 Geyser is a bit problematic, due to a lack of important features in Bedrock Edition.
