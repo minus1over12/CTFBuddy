@@ -81,7 +81,7 @@ public final class CTFBuddy extends JavaPlugin {
     
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
+                             @NotNull String label, @NotNull String @NotNull [] args) {
         switch (command.getName().toLowerCase()) {
             case MAKEFLAG -> {
                 if (args.length < 1) {
@@ -184,7 +184,7 @@ public final class CTFBuddy extends JavaPlugin {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender,
                                                 @NotNull Command command, @NotNull String alias,
-                                                @NotNull String[] args) {
+                                                @NotNull String @NotNull [] args) {
         switch (command.getName().toLowerCase()) {
             case MAKEFLAG -> {
                 if (args.length == 1) {

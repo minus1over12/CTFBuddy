@@ -42,6 +42,8 @@ import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -73,11 +75,11 @@ public class FlagTracker implements Listener {
     /**
      * The key used to identify the flag item.
      */
-    private final NamespacedKey isFlagKey;
+    private final @NotNull NamespacedKey isFlagKey;
     /**
      * Logger provided by Bukkit.
      */
-    private final Logger logger;
+    private final @NotNull Logger logger;
     /**
      * Indicates if flags are allowed to travel to the end. Flags in the end can be destroyed by the
      * void.
@@ -86,11 +88,11 @@ public class FlagTracker implements Listener {
     /**
      * The action to use when a player quits with the flag.
      */
-    private final QuitMode quitMode;
+    private final @NotNull QuitMode quitMode;
     /**
      * Reference to the plugin class. Needed for scheduling tasks.
      */
-    private final Plugin plugin;
+    private final @NotNull Plugin plugin;
     
     /**
      * Toggles use of firework "beacons" every minute.
@@ -107,7 +109,7 @@ public class FlagTracker implements Listener {
      *
      * @param plugin The plugin that this FlagTracker is associated with.
      */
-    protected FlagTracker(JavaPlugin plugin) {
+    protected FlagTracker(@NotNull JavaPlugin plugin) {
         this.isFlagKey = new NamespacedKey(plugin, "flag");
         logger = plugin.getLogger();
         FileConfiguration config = plugin.getConfig();
@@ -126,7 +128,7 @@ public class FlagTracker implements Listener {
      * @param item The item to check
      * @return True if the item is the flag item, false otherwise
      */
-    private boolean isFlag(PersistentDataHolder item) {
+    private boolean isFlag(@Nullable PersistentDataHolder item) {
         return item != null && item.getPersistentDataContainer()
                 .getOrDefault(isFlagKey, PersistentDataType.BOOLEAN, false);
     }
@@ -137,7 +139,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onInventoryPickupItem(InventoryPickupItemEvent event) {
+    public void onInventoryPickupItem(@NotNull InventoryPickupItemEvent event) {
         if (isFlag(event.getItem().getItemStack().getItemMeta())) {
             event.setCancelled(true);
         }
@@ -149,7 +151,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void stopDespawn(ItemDespawnEvent event) {
+    public void stopDespawn(@NotNull ItemDespawnEvent event) {
         if (isFlag(event.getEntity().getItemStack().getItemMeta())) {
             event.setCancelled(true);
         }
@@ -162,7 +164,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onEntityPickupItem(EntityPickupItemEvent event) {
+    public void onEntityPickupItem(@NotNull EntityPickupItemEvent event) {
         Item pickedUpItem = event.getItem();
         if (isFlag(pickedUpItem.getItemStack().getItemMeta())) {
             LivingEntity entity = event.getEntity();
@@ -211,7 +213,7 @@ public class FlagTracker implements Listener {
      *
      * @param item The item to track.
      */
-    protected void trackItem(ItemStack item) {
+    protected void trackItem(@NotNull ItemStack item) {
         item.addUnsafeEnchantment(Enchantment.BINDING_CURSE, 1);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
@@ -232,7 +234,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onEntityDeath(EntityDeathEvent event) {
+    public void onEntityDeath(@NotNull EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
         if (event.getDrops().stream().anyMatch(itemStack -> isFlag(itemStack.getItemMeta()))) {
             entity.setGlowing(false);
@@ -263,7 +265,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onEntitySpawn(EntitySpawnEvent event) {
+    public void onEntitySpawn(@NotNull EntitySpawnEvent event) {
         if (event.getEntity() instanceof Item item && isFlag(item.getItemStack().getItemMeta())) {
             item.setUnlimitedLifetime(true);
             item.setWillAge(false);
@@ -289,7 +291,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onEntityPortal(EntityPortalEvent event) {
+    public void onEntityPortal(@NotNull EntityPortalEvent event) {
         if (!allowEnd && event.getPortalType().equals(PortalType.ENDER)) {
             // Prevent the flag from being teleported to the end, if not allowed
             Entity entity = event.getEntity();
@@ -312,7 +314,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onPlayerPortal(PlayerPortalEvent event) {
+    public void onPlayerPortal(@NotNull PlayerPortalEvent event) {
         if (!allowEnd &&
                 event.getTo().getWorld().getEnvironment().equals(World.Environment.THE_END) &&
                 isFlag(event.getPlayer().getEquipment().getHelmet().getItemMeta())) {
@@ -326,7 +328,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
+    public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
         Player quitter = event.getPlayer();
         ItemStack helmet = quitter.getInventory().getHelmet();
         if (helmet != null && isFlag(helmet.getItemMeta())) {
@@ -354,7 +356,7 @@ public class FlagTracker implements Listener {
      *
      * @param entity The entity to track.
      */
-    protected void trackEntity(Entity entity) {
+    protected void trackEntity(@NotNull Entity entity) {
         entity.getPersistentDataContainer().set(isFlagKey, PersistentDataType.BOOLEAN, true);
         entity.setGlowing(true);
         entity.setCustomNameVisible(true);
@@ -373,7 +375,7 @@ public class FlagTracker implements Listener {
      *
      * @param entityUUID The UUID of the entity to track.
      */
-    protected void trackEntity(UUID entityUUID) {
+    protected void trackEntity(@NotNull UUID entityUUID) {
         Entity entity = Bukkit.getEntity(entityUUID);
         if (entity == null) {
             throw new IllegalArgumentException("Entity not found");
@@ -387,7 +389,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onEntityTarget(EntityTargetLivingEntityEvent event) {
+    public void onEntityTarget(@NotNull EntityTargetLivingEntityEvent event) {
         Entity entity = event.getEntity();
         if (entity instanceof Creeper && isFlag(entity)) {
             // Prevent flag Creepers from blowing themselves up
@@ -401,7 +403,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onEntityTransform(EntityTransformEvent event) {
+    public void onEntityTransform(@NotNull EntityTransformEvent event) {
         if (isFlag(event.getEntity())) {
             trackEntity(event.getTransformedEntity());
         }
@@ -413,7 +415,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onWorldLoad(WorldLoadEvent event) {
+    public void onWorldLoad(@NotNull WorldLoadEvent event) {
         if (particleBeacon) {
             processPotentialFlagEntities(event.getWorld().getEntities());
         }
@@ -425,7 +427,7 @@ public class FlagTracker implements Listener {
      * @param event The event that triggered this method.
      */
     @EventHandler
-    public void onEntitiesLoad(EntitiesLoadEvent event) {
+    public void onEntitiesLoad(@NotNull EntitiesLoadEvent event) {
         if (particleBeacon) {
             processPotentialFlagEntities(event.getEntities());
         }
@@ -437,7 +439,7 @@ public class FlagTracker implements Listener {
      *
      * @param entities The entities to process.
      */
-    private void processPotentialFlagEntities(List<Entity> entities) {
+    private void processPotentialFlagEntities(@NotNull List<Entity> entities) {
         assert !particleBeacon;
         entities.parallelStream()
                 .filter(entity -> isFlag(entity) && !knownFlagEntities.contains(entity))
@@ -450,7 +452,7 @@ public class FlagTracker implements Listener {
      *
      * @param entity the entity to add the schedule to.
      */
-    private void addIndicatorSchedule(Entity entity) {
+    private void addIndicatorSchedule(@NotNull Entity entity) {
         assert !particleBeacon;
         entity.getScheduler().runAtFixedRate(plugin, scheduledTask -> {
                     if (!isFlag(entity) && entity instanceof LivingEntity livingEntity) {
